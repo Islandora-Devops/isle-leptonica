@@ -83,7 +83,7 @@ target "leptonica-common" {
     # It will be the digest printed when you do: docker pull alpine:3.17.1
     # Not the one displayed on DockerHub.
     # N.B. This should match the value used in <https://github.com/Islandora-Devops/isle-buildkit>
-    alpine = "docker-image://alpine:3.19.1@sha256:c5b1261d6d3e43071626931fc004f70149baeba2c8ec672bd4f27761f8e1ad6b"
+    alpine = "docker-image://alpine:3.20.2@sha256:0a4eaa0eecf5f8c050e5bba433f58c052be7587ee8af3e8b3910ef9ab5fbe9f5"
   }
 }
 
