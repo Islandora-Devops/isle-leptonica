@@ -1,25 +1,14 @@
-###############################################################################
-# Variables
-###############################################################################
+variable "SOURCE_DATE_EPOCH" {
+  default = "0"
+}
+
 variable "REPOSITORY" {
   default = "islandora"
 }
 
-variable "CACHE_FROM_REPOSITORY" {
-  default = "islandora"
-}
-
-variable "CACHE_TO_REPOSITORY" {
-  default = "islandora"
-}
-
 variable "TAG" {
-  # "local" is to distinguish that from builds produced locally.
+  # "local" is to distinguish remote images from those produced locally.
   default = "local"
-}
-
-variable "SOURCE_DATE_EPOCH" {
-  default = "0"
 }
 
 ###############################################################################
@@ -37,12 +26,12 @@ function "tags" {
 
 function "cacheFrom" {
   params = [image, arch]
-  result = ["type=registry,ref=${CACHE_FROM_REPOSITORY}/cache:${image}-main-${arch}", "type=registry,ref=${CACHE_FROM_REPOSITORY}/cache:${image}-${TAG}-${arch}"]
+  result = ["type=registry,ref=${REPOSITORY}/cache:${image}-main-${arch}", "type=registry,ref=${REPOSITORY}/cache:${image}-${TAG}-${arch}"]
 }
 
 function "cacheTo" {
   params = [image, arch]
-  result =  ["type=registry,oci-mediatypes=true,mode=max,compression=estargz,compression-level=5,ref=${CACHE_TO_REPOSITORY}/cache:${image}-${TAG}-${arch}"]
+  result = ["type=registry,oci-mediatypes=true,mode=max,compression=estargz,compression-level=5,ref=${REPOSITORY}/cache:${image}-${TAG}-${arch}"]
 }
 
 ###############################################################################
@@ -50,7 +39,7 @@ function "cacheTo" {
 ###############################################################################
 group "default" {
   targets = [
-    "leptonica"
+    "leptonica",
   ]
 }
 
@@ -75,7 +64,7 @@ group "ci" {
 }
 
 ###############################################################################
-# Common target properties.
+# Targets
 ###############################################################################
 target "common" {
   args = {
@@ -86,14 +75,6 @@ target "common" {
   }
 }
 
-target "amd64-common" {
-  platforms = ["linux/amd64"]
-}
-
-target "arm64-common" {
-  platforms = ["linux/arm64"]
-}
-
 target "leptonica-common" {
   inherits = ["common"]
   context  = "leptonica"
@@ -101,29 +82,16 @@ target "leptonica-common" {
     # The digest (sha256 hash) is not platform specific but the digest for the manifest of all platforms.
     # It will be the digest printed when you do: docker pull alpine:3.17.1
     # Not the one displayed on DockerHub.
-    # N.B. This should match the value used in:
-    # - <https://github.com/Islandora-Devops/isle-imagemagick>
-    # - <https://github.com/Islandora-Devops/isle-leptonica>
+    # N.B. This should match the value used in <https://github.com/Islandora-Devops/isle-buildkit>
     alpine = "docker-image://alpine:3.19.1@sha256:c5b1261d6d3e43071626931fc004f70149baeba2c8ec672bd4f27761f8e1ad6b"
   }
 }
 
-###############################################################################
-# Default Image targets for local builds.
-###############################################################################
-target "leptonica" {
-  inherits   = ["leptonica-common"]
-  cache-from = cacheFrom("leptonica", hostArch())
-  tags       = tags("leptonica", "")
-}
-
-###############################################################################
-# linux/amd64 targets.
-###############################################################################
 target "leptonica-amd64" {
-  inherits   = ["leptonica-common", "amd64-common"]
-  cache-from = cacheFrom("leptonica", "amd64")
+  inherits   = ["leptonica-common"]
   tags       = tags("leptonica", "amd64")
+  cache-from = cacheFrom("leptonica", "amd64")
+  platforms  = ["linux/amd64"]
 }
 
 target "leptonica-amd64-ci" {
@@ -131,16 +99,20 @@ target "leptonica-amd64-ci" {
   cache-to = cacheTo("leptonica", "amd64")
 }
 
-###############################################################################
-# linux/arm64 targets.
-###############################################################################
 target "leptonica-arm64" {
-  inherits   = ["leptonica-common", "arm64-common"]
-  cache-from = cacheFrom("leptonica", "arm64")
+  inherits   = ["leptonica-common"]
   tags       = tags("leptonica", "arm64")
+  cache-from = cacheFrom("leptonica", "arm64")
+  platforms  = ["linux/arm64"]
 }
 
 target "leptonica-arm64-ci" {
   inherits = ["leptonica-arm64"]
   cache-to = cacheTo("leptonica", "arm64")
+}
+
+target "leptonica" {
+  inherits   = ["leptonica-common"]
+  cache-from = cacheFrom("leptonica", hostArch())
+  tags       = tags("leptonica", "")
 }

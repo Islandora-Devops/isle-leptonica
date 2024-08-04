@@ -5,13 +5,12 @@
 
 - [Introduction](#introduction)
 - [Requirements](#requirements)
-- [Building](#building)
-  - [Local Registry](#local-registry)
-- [Cleanup](#cleanup)
+- [Host-platform Builds](#host-platform-builds)
+- [Multi-platform builds](#multi-platform-builds)
 
 ## Introduction
 
-This repository provides the `islandora/leptonica` image which only exists
+This repository provides the `islandora/imagemagick` image which only exists
 to provide a custom Alpine APK package(s).
 
 Since this does not change often and takes a very long time to cross compile for
@@ -21,62 +20,33 @@ both platforms it's been moved to it's own repository.
 
 To build the Docker images using the provided Gradle build scripts requires:
 
-- [Docker 19.03+](https://docs.docker.com/get-docker/)
-- [mkcert](https://github.com/FiloSottile/mkcert)
+- [Docker 20+](https://docs.docker.com/get-docker/)
 
-## Building
+## Host-platform Builds
 
 You can build your host platform locally using the default builder like so.
 
 ```bash
-docker buildx bake --builder default
+docker context use default
+docker buildx bake
 ```
 
-### Local Registry
+## Multi-platform builds
 
 To test multi-arch builds and remote build caching requires setting up a local
 registry.
 
-You need to generate certificates for the local registry:
+Please use [isle-builder] to create a builder to simplify this process. Using
+the defaults provided, .e.g:
 
-```bash
-mkcert -install
-cp $(mkcert -CAROOT)/* certs/
-mkcert -cert-file ./certs/cert.pem -key-file ./certs/privkey.pem "*.islandora.dev" "islandora.dev" "*.islandora.io" "islandora.io" "*.islandora.info" "islandora.info" "localhost" "127.0.0.1" "::1"
+```
+make start
 ```
 
-A docker compose file is provided to setup a local registry:
+After which you should be able to build with the following command:
 
 ```bash
-docker compose up -d
+REPOSITORY=islandora.io docker buildx bake --builder isle-builder ci --push
 ```
 
-Once the registry is setup can create a builder:
-
-```bash
-docker buildx create \
-  --bootstrap \
-  --config buildkitd.toml \
-  --driver-opt "image=moby/buildkit:v0.11.1,network=isle-leptonica" \
-  --name "isle-leptonica"
-```
-
-Now you can perform the build locally by pushing to the local registry:
-
-```bash
-REGISTRY=islandora.io docker buildx bake --builder isle-leptonica ci --push
-```
-
-## Cleanup
-
-Remove the builder:
-
-```bash
-docker buildx rm isle-leptonica
-```
-
-Remove the registry:
-
-```bash
-docker compose down -v
-```
+[isle-builder]: https://github.com/Islandora-Devops/isle-builder
